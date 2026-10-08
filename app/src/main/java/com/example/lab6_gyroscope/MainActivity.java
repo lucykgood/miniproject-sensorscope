@@ -1,6 +1,7 @@
 package com.example.lab6_gyroscope;
 
 import android.content.Context;
+import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.os.Bundle;
@@ -49,7 +50,15 @@ public class MainActivity extends AppCompatActivity {
         });
 
         btnStartSession.setOnClickListener(view -> {
-            Toast.makeText(this, "Session screen coming next!", Toast.LENGTH_SHORT).show();
+            if (selectedSensor != null) {
+                Intent intent = new Intent(
+                        MainActivity.this,
+                        SessionActivity.class);
+                intent.putExtra(
+                        "sensorType",
+                        selectedSensor.getType());
+                startActivity(intent);
+            }
         });
     }
 

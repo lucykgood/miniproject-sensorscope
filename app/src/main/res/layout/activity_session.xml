@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Active Session"
+            android:textSize="26sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvSensorName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Sensor"
+            android:textSize="20sp"
+            android:layout_marginTop="16dp" />
+
+        <TextView
+            android:id="@+id/tvElapsedTime"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Time: 0.0 s"
+            android:textSize="18sp"
+            android:layout_marginTop="12dp" />
+
+        <TextView
+            android:id="@+id/tvSampleCount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Samples: 0"
+            android:textSize="18sp"
+            android:layout_marginTop="8dp" />
+
+        <TextView
+            android:id="@+id/tvSensorValues"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="X: 0.000&#10;Y: 0.000&#10;Z: 0.000"
+            android:textSize="18sp"
+            android:layout_marginTop="24dp" />
+
+        <Button
+            android:id="@+id/btnStopSession"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Stop Session"
+            android:layout_marginTop="32dp" />
+
+    </LinearLayout>
+</ScrollView>
