@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.ArrayList;
 
 public class SessionActivity extends AppCompatActivity implements SensorEventListener {
     private SensorManager sensorManager;
@@ -34,11 +35,17 @@ public class SessionActivity extends AppCompatActivity implements SensorEventLis
     private BufferedWriter writer;
     private File sessionFile;
     private SensorGraphView sensorGraph;
+    private ArrayList<Float> xBuffer = new ArrayList<>();
+    private ArrayList<Float> yBuffer = new ArrayList<>();
+    private ArrayList<Float> zBuffer = new ArrayList<>();
+    private TextView tvMotionFeature;
 
     private long startTime;
     private int sampleCount = 0;
     private boolean isRecording = false;
     private long lastGraphUpdate = 0;
+    private static final int WINDOW_SIZE = 128;
+    private double motionFeature = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,6 +58,7 @@ public class SessionActivity extends AppCompatActivity implements SensorEventLis
         tvSensorValues = findViewById(R.id.tvSensorValues);
         btnStopSession = findViewById(R.id.btnStopSession);
         sensorGraph = findViewById(R.id.sensorGraph);
+        tvMotionFeature = findViewById(R.id.tvMotionFeature);
 
         sensorManager = (SensorManager)
                 getSystemService(Context.SENSOR_SERVICE);
@@ -147,6 +155,54 @@ public class SessionActivity extends AppCompatActivity implements SensorEventLis
         }
     }
 
+    private void addSample(float x, float y, float z) {
+        xBuffer.add(x);
+        yBuffer.add(y);
+        zBuffer.add(z);
+
+        if (xBuffer.size() > WINDOW_SIZE) {
+            xBuffer.remove(0);
+            yBuffer.remove(0);
+            zBuffer.remove(0);
+        }
+
+        if (xBuffer.size() == WINDOW_SIZE) {
+            calculateMotion();
+        }
+    }
+
+    private double calculateStandardDeviation(ArrayList<Float> values) {
+        double sum = 0;
+
+        for (float value : values) {
+            sum += value;
+        }
+
+        double mean = sum / values.size();
+
+        double squaredDifferenceSum = 0;
+
+        for (float value : values) {
+            squaredDifferenceSum += Math.pow(value - mean, 2);
+        }
+
+        double variance = squaredDifferenceSum / values.size();
+
+        return Math.sqrt(variance);
+    }
+
+    private void calculateMotion() {
+        double sigmaX = calculateStandardDeviation(xBuffer);
+        double sigmaY = calculateStandardDeviation(yBuffer);
+        double sigmaZ = calculateStandardDeviation(zBuffer);
+
+        motionFeature = Math.sqrt (
+                sigmaX * sigmaX + sigmaY * sigmaY + sigmaZ * sigmaZ
+        );
+
+        tvMotionFeature.setText(String.format(Locale.US, "Motion Feature (M): %.4f", motionFeature));
+    }
+
     private void startRecording() {
         if (selectedSensor == null || isRecording) {
             return;
@@ -156,6 +212,11 @@ public class SessionActivity extends AppCompatActivity implements SensorEventLis
             finish();
             return;
         }
+
+        xBuffer.clear();
+        yBuffer.clear();
+        zBuffer.clear();
+        motionFeature = 0;
 
         sampleCount = 0;
         startTime = SystemClock.elapsedRealtime();
@@ -200,6 +261,8 @@ public class SessionActivity extends AppCompatActivity implements SensorEventLis
         float x = event.values[0];
         float y = event.values[1];
         float z = event.values[2];
+
+        addSample(x, y, z);
 
         sensorGraph.addSample(event.timestamp, x, y, z);
         long currentTime = SystemClock.elapsedRealtime();

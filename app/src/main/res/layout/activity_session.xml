@@ -51,6 +51,22 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:text="Motion Analysis"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginTop="24dp" />
+
+        <TextView
+            android:id="@+id/tvMotionFeature"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Motion Feature (M): Waiting for 128 samples..."
+            android:textSize="18sp"
+            android:layout_marginTop="12dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:text="Time-Domain Graph"
             android:textSize="20sp"
             android:textStyle="bold"
