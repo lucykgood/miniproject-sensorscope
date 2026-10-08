@@ -44,6 +44,7 @@ public class SessionActivity extends AppCompatActivity implements SensorEventLis
     private EditText editThreshold1;
     private EditText editThreshold2;
     private Button btnApplyThresholds;
+    private MotionIndicatorView motionIndicator;
 
     private long startTime;
     private int sampleCount = 0;
@@ -70,6 +71,7 @@ public class SessionActivity extends AppCompatActivity implements SensorEventLis
         editThreshold1 = findViewById(R.id.editThreshold1);
         editThreshold2 = findViewById(R.id.editThreshold2);
         btnApplyThresholds = findViewById(R.id.btnApplyThresholds);
+        motionIndicator = findViewById(R.id.motionIndicator);
 
         sensorManager = (SensorManager)
                 getSystemService(Context.SENSOR_SERVICE);
@@ -274,7 +276,6 @@ public class SessionActivity extends AppCompatActivity implements SensorEventLis
         }
     }
 
-
     private void updateMotionLevel() {
 
         String level;
@@ -288,6 +289,8 @@ public class SessionActivity extends AppCompatActivity implements SensorEventLis
         }
 
         tvMotionLevel.setText("Motion Level: " + level);
+
+        motionIndicator.setMotionLevel(level);
     }
 
     private void startRecording() {
