@@ -24,6 +24,11 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.ArrayList;
 
+import org.apache.commons.math3.complex.Complex;
+import org.apache.commons.math3.transform.DftNormalization;
+import org.apache.commons.math3.transform.FastFourierTransformer;
+import org.apache.commons.math3.transform.TransformType;
+
 public class SessionActivity extends AppCompatActivity implements SensorEventListener {
     private SensorManager sensorManager;
     private Sensor selectedSensor;
@@ -45,6 +50,8 @@ public class SessionActivity extends AppCompatActivity implements SensorEventLis
     private EditText editThreshold2;
     private Button btnApplyThresholds;
     private MotionIndicatorView motionIndicator;
+    private FrequencyGraphView frequencyGraph;
+    private ArrayList<Long> fftTimestamps = new ArrayList<>();
 
     private long startTime;
     private int sampleCount = 0;
@@ -54,6 +61,7 @@ public class SessionActivity extends AppCompatActivity implements SensorEventLis
     private double motionFeature = 0;
     private double threshold1;
     private double threshold2;
+    private long lastFftUpdate = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,6 +80,7 @@ public class SessionActivity extends AppCompatActivity implements SensorEventLis
         editThreshold2 = findViewById(R.id.editThreshold2);
         btnApplyThresholds = findViewById(R.id.btnApplyThresholds);
         motionIndicator = findViewById(R.id.motionIndicator);
+        frequencyGraph = findViewById(R.id.frequencyGraph);
 
         sensorManager = (SensorManager)
                 getSystemService(Context.SENSOR_SERVICE);
@@ -181,19 +190,29 @@ public class SessionActivity extends AppCompatActivity implements SensorEventLis
         }
     }
 
-    private void addSample(float x, float y, float z) {
+
+    private void addSample(long timestamp, float x, float y, float z) {
         xBuffer.add(x);
         yBuffer.add(y);
         zBuffer.add(z);
+        fftTimestamps.add(timestamp);
 
         if (xBuffer.size() > WINDOW_SIZE) {
             xBuffer.remove(0);
             yBuffer.remove(0);
             zBuffer.remove(0);
+            fftTimestamps.remove(0);
         }
 
         if (xBuffer.size() == WINDOW_SIZE) {
             calculateMotion();
+
+            long currentTime = SystemClock.elapsedRealtime();
+
+            if (currentTime - lastFftUpdate >= 500) {
+                calculateFFT();
+                lastFftUpdate = currentTime;
+            }
         }
     }
 
@@ -308,6 +327,9 @@ public class SessionActivity extends AppCompatActivity implements SensorEventLis
         zBuffer.clear();
         motionFeature = 0;
 
+        fftTimestamps.clear();
+        lastFftUpdate = 0;
+
         sampleCount = 0;
         startTime = SystemClock.elapsedRealtime();
         isRecording = true;
@@ -352,7 +374,7 @@ public class SessionActivity extends AppCompatActivity implements SensorEventLis
         float y = event.values[1];
         float z = event.values[2];
 
-        addSample(x, y, z);
+        addSample(event.timestamp, x, y, z);
 
         sensorGraph.addSample(event.timestamp, x, y, z);
         long currentTime = SystemClock.elapsedRealtime();
@@ -378,6 +400,57 @@ public class SessionActivity extends AppCompatActivity implements SensorEventLis
                 Locale.US,
                 "X: %.3f\nY: %.3f\nZ: %.3f",
                 x, y, z));
+    }
+
+
+    private void calculateFFT() {
+        long firstTimestamp = fftTimestamps.get(0);
+        long lastTimestamp = fftTimestamps.get(WINDOW_SIZE - 1);
+
+        double elapsedSeconds = (lastTimestamp - firstTimestamp) / 1000000000.0;
+
+        if (elapsedSeconds <= 0) {
+            return;
+        }
+
+        double sampleRate = (WINDOW_SIZE - 1) / elapsedSeconds;
+
+        // FFT magnitudes for all axes
+        double[] xSpectrum = getFFTMagnitudes(xBuffer);
+        double[] ySpectrum = getFFTMagnitudes(yBuffer);
+        double[] zSpectrum = getFFTMagnitudes(zBuffer);
+
+        frequencyGraph.setSpectrum(xSpectrum, ySpectrum, zSpectrum, sampleRate);
+    }
+
+    private double[] getFFTMagnitudes(ArrayList<Float> values) {
+        double[] data = new double[WINDOW_SIZE];
+
+        double sum = 0;
+        for (int i = 0; i < WINDOW_SIZE; i++) {
+            sum += values.get(i);
+        }
+
+        double mean = sum / WINDOW_SIZE;
+
+        for (int i = 0; i < WINDOW_SIZE; i++) {
+            data[i] = values.get(i) - mean;
+        }
+
+        // 128-point FFT
+        FastFourierTransformer transformer =
+                new FastFourierTransformer(
+                        DftNormalization.STANDARD);
+
+        Complex[] result = transformer.transform(
+                data, TransformType.FORWARD);
+
+        // FFT values -> magnitudes
+        double[] magnitudes = new double[WINDOW_SIZE];
+        for (int i = 1; i < 64; i++) {
+            magnitudes[i] = result[i].abs();
+        }
+        return magnitudes;
     }
 
     @Override
