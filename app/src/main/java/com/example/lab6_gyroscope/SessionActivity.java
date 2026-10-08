@@ -33,10 +33,12 @@ public class SessionActivity extends AppCompatActivity implements SensorEventLis
     private Button btnStopSession;
     private BufferedWriter writer;
     private File sessionFile;
+    private SensorGraphView sensorGraph;
 
     private long startTime;
     private int sampleCount = 0;
     private boolean isRecording = false;
+    private long lastGraphUpdate = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +50,7 @@ public class SessionActivity extends AppCompatActivity implements SensorEventLis
         tvSampleCount = findViewById(R.id.tvSampleCount);
         tvSensorValues = findViewById(R.id.tvSensorValues);
         btnStopSession = findViewById(R.id.btnStopSession);
+        sensorGraph = findViewById(R.id.sensorGraph);
 
         sensorManager = (SensorManager)
                 getSystemService(Context.SENSOR_SERVICE);
@@ -197,6 +200,14 @@ public class SessionActivity extends AppCompatActivity implements SensorEventLis
         float x = event.values[0];
         float y = event.values[1];
         float z = event.values[2];
+
+        sensorGraph.addSample(event.timestamp, x, y, z);
+        long currentTime = SystemClock.elapsedRealtime();
+
+        if (currentTime - lastGraphUpdate >= 100) {
+            sensorGraph.invalidate();
+            lastGraphUpdate = currentTime;
+        }
 
         sampleCount++;
 

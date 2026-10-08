@@ -48,6 +48,21 @@
             android:textSize="18sp"
             android:layout_marginTop="24dp" />
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Time-Domain Graph"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginTop="24dp" />
+
+        <com.example.lab6_gyroscope.SensorGraphView
+            android:id="@+id/sensorGraph"
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            android:layout_marginTop="12dp"
+            android:background="#F5F5F5" />
+
         <Button
             android:id="@+id/btnStopSession"
             android:layout_width="match_parent"
