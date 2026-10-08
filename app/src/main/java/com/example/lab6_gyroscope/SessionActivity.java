@@ -11,6 +11,7 @@ import android.os.SystemClock;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.EditText;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -39,6 +40,10 @@ public class SessionActivity extends AppCompatActivity implements SensorEventLis
     private ArrayList<Float> yBuffer = new ArrayList<>();
     private ArrayList<Float> zBuffer = new ArrayList<>();
     private TextView tvMotionFeature;
+    private TextView tvMotionLevel;
+    private EditText editThreshold1;
+    private EditText editThreshold2;
+    private Button btnApplyThresholds;
 
     private long startTime;
     private int sampleCount = 0;
@@ -46,6 +51,8 @@ public class SessionActivity extends AppCompatActivity implements SensorEventLis
     private long lastGraphUpdate = 0;
     private static final int WINDOW_SIZE = 128;
     private double motionFeature = 0;
+    private double threshold1;
+    private double threshold2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,6 +66,10 @@ public class SessionActivity extends AppCompatActivity implements SensorEventLis
         btnStopSession = findViewById(R.id.btnStopSession);
         sensorGraph = findViewById(R.id.sensorGraph);
         tvMotionFeature = findViewById(R.id.tvMotionFeature);
+        tvMotionLevel = findViewById(R.id.tvMotionLevel);
+        editThreshold1 = findViewById(R.id.editThreshold1);
+        editThreshold2 = findViewById(R.id.editThreshold2);
+        btnApplyThresholds = findViewById(R.id.btnApplyThresholds);
 
         sensorManager = (SensorManager)
                 getSystemService(Context.SENSOR_SERVICE);
@@ -66,6 +77,17 @@ public class SessionActivity extends AppCompatActivity implements SensorEventLis
         Intent intent = getIntent();
         int sensorType = intent.getIntExtra(
                 "sensorType", Sensor.TYPE_GYROSCOPE);
+
+        if (sensorType == Sensor.TYPE_ACCELEROMETER) {
+            threshold1 = 0.20;
+            threshold2 = 0.80;
+        } else {
+            threshold1 = 0.05;
+            threshold2 = 0.25;
+        }
+
+        editThreshold1.setText(String.valueOf(threshold1));
+        editThreshold2.setText(String.valueOf(threshold2));
 
         selectedSensor = sensorManager.getDefaultSensor(sensorType);
 
@@ -84,6 +106,8 @@ public class SessionActivity extends AppCompatActivity implements SensorEventLis
             stopRecording();
             finish();
         });
+
+        btnApplyThresholds.setOnClickListener(v -> applyThresholds());
 
         startRecording();
     }
@@ -201,6 +225,69 @@ public class SessionActivity extends AppCompatActivity implements SensorEventLis
         );
 
         tvMotionFeature.setText(String.format(Locale.US, "Motion Feature (M): %.4f", motionFeature));
+
+        updateMotionLevel();
+    }
+
+
+    private void applyThresholds() {
+
+        String input1 = editThreshold1.getText().toString().trim();
+        String input2 = editThreshold2.getText().toString().trim();
+
+        if (input1.isEmpty() || input2.isEmpty()) {
+            Toast.makeText(this,
+                    "Please enter both thresholds",
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        try {
+            double newT1 = Double.parseDouble(input1);
+            double newT2 = Double.parseDouble(input2);
+
+            if (!Double.isFinite(newT1) ||
+                    !Double.isFinite(newT2) ||
+                    newT1 < 0 || newT1 >= newT2) {
+
+                Toast.makeText(this,
+                        "Thresholds must satisfy 0 <= T1 < T2",
+                        Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            threshold1 = newT1;
+            threshold2 = newT2;
+
+            Toast.makeText(this,
+                    "Thresholds updated",
+                    Toast.LENGTH_SHORT).show();
+
+            if (xBuffer.size() == WINDOW_SIZE) {
+                updateMotionLevel();
+            }
+
+        } catch (NumberFormatException e) {
+            Toast.makeText(this,
+                    "Please enter valid numbers",
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
+    private void updateMotionLevel() {
+
+        String level;
+
+        if (motionFeature < threshold1) {
+            level = "LOW";
+        } else if (motionFeature < threshold2) {
+            level = "MEDIUM";
+        } else {
+            level = "HIGH";
+        }
+
+        tvMotionLevel.setText("Motion Level: " + level);
     }
 
     private void startRecording() {
